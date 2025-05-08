@@ -2,8 +2,6 @@
 
 This project is a backend API for an online Game Store, developed as part of the Database Systems course. It allows for managing games, users, orders, and more, with a focus on database interactions and SQL.
 
-**Deadline:** May 9, 2025
-
 ## Project Overview
 
 The GameStore API provides functionalities to simulate an e-commerce platform for video games. Key features include:
@@ -95,18 +93,3 @@ The GameStore API provides functionalities to simulate an e-commerce platform fo
 Once the application is running, interactive API documentation can be accessed at:
 * **Swagger UI:** `http://127.0.0.1:8000/docs`
 * **ReDoc:** `http://127.0.0.1:8000/redoc`
-
-## Project Structure
-Bit-Bazaar/
-├── backend/
-│   ├── init.py
-│   ├── crud.py         # Database interaction logic
-│   ├── database.py     # Database connection setup and session management
-│   ├── main.py         # FastAPI application and API route definitions
-│   ├── models.py       # SQLAlchemy ORM models
-│   └── schemas.py      # Pydantic schemas for data validation
-├── frontend/           # (Placeholder for frontend code)
-├── venv/               # Python virtual environment (add to .gitignore)
-├── requirements.txt    # Python dependencies
-└── README.md           # This file
-
