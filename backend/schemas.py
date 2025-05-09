@@ -105,20 +105,16 @@ class OrderItemCreate(BaseModel):
             Decimal: lambda v: float(v)
         }
 
-
-
 # Schema for reading an order item (includes the generated ID)
 class OrderItem(OrderItemCreate):
     order_item_id: int
-    price: Decimal  # Add price here
-
+    price: Decimal  # Price of the game
+    price_at_purchase: Decimal  # Price at the time of purchase
     class Config(OrderItemCreate.Config):
         from_attributes = True
         json_encoders = {
             Decimal: lambda v: float(v)
         }
-
-
 
 # Schema for creating an order (input from the client)
 class OrderCreate(BaseModel):

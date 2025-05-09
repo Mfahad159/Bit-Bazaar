@@ -24,6 +24,7 @@ class OrderItem(Base):
     game_id = Column(Integer, ForeignKey("Games.game_id"), nullable=False)
     quantity = Column(Integer, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)  # Price of the game at the time of order
+    price_at_purchase = Column(Numeric(10, 2), nullable=False)  # Price of the game at the time of order
 
     order = relationship("Order", back_populates="order_items")
     game = relationship("Game")  # No back_populates because Game doesn't have direct orders.

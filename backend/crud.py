@@ -17,7 +17,7 @@ def get_game(db: Session, game_id: int):
 # Function to get multiple games (with skip and limit for pagination)
 #==============================================================================
 def get_games(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Game).offset(skip).limit(limit).all()
+    return db.query(models.Game).order_by(models.Game.game_id).offset(skip).limit(limit).all()
 
 #==============================================================================
 # Function to create a new game
@@ -165,7 +165,8 @@ def create_order(db: Session, order: schemas.OrderCreate) -> models.Order:
             order_id=db_order.order_id,
             game_id=item.game_id,
             quantity=item.quantity,
-            price=game.price,  # Store the price at the time of order
+            price=game.price,  # Current price
+            price_at_purchase=game.price,  # Store the price at the time of order
         )
         db.add(db_order_item)
         game.stock_quantity -= item.quantity #reduce stock
