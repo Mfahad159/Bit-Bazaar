@@ -90,3 +90,59 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None # Subject of the token (could be username)
+
+
+# --- Order Schemas ---
+
+# Schema for creating an order item (used within OrderCreate)
+class OrderItemCreate(BaseModel):
+    game_id: int
+    quantity: int
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            Decimal: lambda v: float(v)
+        }
+
+
+
+# Schema for reading an order item (includes the generated ID)
+class OrderItem(OrderItemCreate):
+    order_item_id: int
+    price: Decimal  # Add price here
+
+    class Config(OrderItemCreate.Config):
+        from_attributes = True
+        json_encoders = {
+            Decimal: lambda v: float(v)
+        }
+
+
+
+# Schema for creating an order (input from the client)
+class OrderCreate(BaseModel):
+    user_id: int  # We'll get this from the token in the endpoint, but for simplicity of schema, we keep it.
+    order_items: List[OrderItemCreate]
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            Decimal: lambda v: float(v)
+        }
+
+
+
+# Schema for reading an order (output to the client)
+class Order(OrderCreate):
+    order_id: int
+    order_date: datetime
+    total_price: Decimal
+    status: str  # Add status here
+    order_items: List[OrderItem]
+
+    class Config(OrderCreate.Config):  # Inherit the config and add to it.
+        from_attributes = True
+        json_encoders = {
+            Decimal: lambda v: float(v)
+        }

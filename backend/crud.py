@@ -3,7 +3,8 @@ from .security import get_password_hash #
 from sqlalchemy.orm import Session
 from . import models, schemas # Import our SQLAlchemy models and Pydantic schemas
 from decimal import Decimal 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
+from typing import List, Optional
 
 #==============================================================================
 # Function to get a game by its ID
@@ -85,6 +86,13 @@ def delete_game(db: Session, game_id: int):
 #==============================================================================
 # --- User CRUD Functions ---
 #==============================================================================
+def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.User]:
+    """
+    Get all users from the database.
+    """
+    return db.query(models.User).order_by(models.User.user_id).offset(skip).limit(limit).all()
+
+    
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
@@ -125,3 +133,59 @@ def create_user(db: Session, user: schemas.UserCreate):
     
 
     #==============================================================================
+
+
+def create_order(db: Session, order: schemas.OrderCreate) -> models.Order:
+    """
+    Create a new order and its associated order items.
+    """
+    # Calculate the total price of the order.
+    total_price = Decimal(0)
+    for item in order.order_items:
+        game = db.query(models.Game).get(item.game_id)
+        if not game:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Game with id {item.game_id} not found")
+        if item.quantity > game.stock_quantity:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Not enough stock for game {game.title} (id: {game.game_id}).  Requested {item.quantity}, available {game.stock_quantity}")
+        total_price += game.price * item.quantity
+
+    # Create the order.
+    db_order = models.Order(
+        user_id=order.user_id,
+        total_price=total_price,
+        status="pending",  # Set initial order status
+    )
+    db.add(db_order)
+    db.flush()  # Need to flush to get the order_id
+
+    # Create the order items.
+    for item in order.order_items:
+        game = db.query(models.Game).get(item.game_id) #get game again
+        db_order_item = models.OrderItem(
+            order_id=db_order.order_id,
+            game_id=item.game_id,
+            quantity=item.quantity,
+            price=game.price,  # Store the price at the time of order
+        )
+        db.add(db_order_item)
+        game.stock_quantity -= item.quantity #reduce stock
+        db.add(game)
+
+    db.commit()
+    db.refresh(db_order)  # Refresh the order to get the order_items
+    return db_order
+    
+
+
+def get_order(db: Session, order_id: int) -> Optional[models.Order]:
+    """
+    Get an order by its ID.
+    """
+    return db.query(models.Order).filter(models.Order.order_id == order_id).first()
+
+
+def get_orders_by_user(db: Session, user_id: int) -> List[models.Order]:
+    """
+    Get all orders for a specific user.
+    """
+    return db.query(models.Order).filter(models.Order.user_id == user_id).all()
