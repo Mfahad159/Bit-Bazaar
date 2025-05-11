@@ -9,10 +9,12 @@ The GameStore API provides functionalities to simulate an e-commerce platform fo
 * User account management (to be implemented).
 * Order processing (to be implemented).
 * Payment simulation (to be implemented).
+* Frontend integration for displaying games and managing the cart.
 
 ## Technology Stack
 
 * **Backend:** Python with FastAPI
+* **Frontend:** HTML, CSS, JavaScript
 * **Database:** Microsoft SQL Server
 * **ORM:** SQLAlchemy
 * **Server:** Uvicorn
@@ -31,11 +33,17 @@ The GameStore API provides functionalities to simulate an e-commerce platform fo
 * **API Endpoints:**
     * **Games CRUD:**
         * `POST /games/`: Create a new game. (Verified Working)
-        * `GET /games/`: Retrieve a list of games. (Testing in progress)
-        * `GET /games/{game_id}`: Retrieve a specific game by ID. (Testing in progress)
-        * `PUT /games/{game_id}`: Update an existing game. (Code present)
-        * `DELETE /games/{game_id}`: Delete a game. (Code present)
-    * Interactive API documentation available via `/docs` (Swagger UI) and `/redoc`.
+        * `GET /games/`: Retrieve a list of games. (Verified Working)
+        * `GET /games/{game_id}`: Retrieve a specific game by ID. (Verified Working)
+        * `PUT /games/{game_id}`: Update an existing game. (Verified Working)
+        * `DELETE /games/{game_id}`: Delete a game. (Verified Working)
+    * **Cart Management:**
+        * `POST /cart/items/`: Add an item to the cart. (Verified Working)
+        * `GET /cart/`: Retrieve cart items. (Verified Working)
+* **Frontend Integration:**
+    * Display games in a grid format with filtering by category.
+    * Add games to the cart with real-time updates to the cart count.
+    * User authentication for cart operations.
 
 ## Setup and Installation
 
@@ -87,6 +95,10 @@ The GameStore API provides functionalities to simulate an e-commerce platform fo
         uvicorn backend.main:app --reload
         ```
     * The API will be available at `http://127.0.0.1:8000`.
+
+8.  **Frontend Setup:**
+    * Open the `index.html` file in the `frontend` directory in a browser.
+    * Ensure the backend is running to fetch and display games.
 
 ## API Documentation
 
