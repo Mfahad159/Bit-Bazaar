@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, DECIMAL, DATE, DateTime, Foreign
 from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import datetime
-
+from backend.database import Base
 class Order(Base):
     __tablename__ = "Orders"
 
@@ -39,7 +39,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(String(20), nullable=False, default='customer')
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-
+    cart_items = relationship("CartItem", back_populates="user", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="user") # ADDED THIS LINE
 
 
@@ -56,3 +56,14 @@ class Game(Base):
     image_url = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+class CartItem(Base):
+    __tablename__ = "CartItems"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("Users.user_id"), nullable=False)
+    game_id = Column(Integer, ForeignKey("Games.game_id"), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="cart_items")
+    game = relationship("Game")

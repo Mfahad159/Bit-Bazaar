@@ -1,17 +1,80 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 from decimal import Decimal
-from . import crud, models, schemas, security
-from .database import SessionLocal
+from fastapi import File, UploadFile
+from backend import crud, models, schemas, security
+from .database import SessionLocal, Base, engine
+import os
 from datetime import timedelta
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+# Initialize database tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="GameStore API",
     version="0.1.0",
     description="API for managing an online game store."
 )
+
+# API routes should come before static file serving
+api_app = FastAPI(title="GameStore API", version="0.1.0")
+app.mount("/api", api_app)
+
+# Image upload directory
+UPLOAD_DIR = "backend/static/images"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+# Serve static files for the frontend
+app.mount("/static", StaticFiles(directory="backend/static"), name="static")
+
+# Serve frontend HTML files
+@app.get("/")
+async def read_root():
+    return FileResponse("backend/static/index.html")
+
+@app.get("/{filename}.html")
+async def read_html(filename: str):
+    return FileResponse(f"backend/static/{filename}.html")
+
+# Catch-all route for other static files
+@app.get("/{path:path}")
+async def read_static(path: str):
+    static_path = f"backend/static/{path}"
+    if os.path.exists(static_path):
+        return FileResponse(static_path)
+    raise HTTPException(status_code=404, detail="File not found")
+
+@api_app.post("/upload-image/", tags=["Images"])
+async def upload_image(file: UploadFile = File(...)):
+    """
+    Upload an image to the server.
+    """
+    file_location = os.path.join(UPLOAD_DIR, file.filename)
+    with open(file_location, "wb") as f:
+        f.write(await file.read())
+    return {"image_url": f"/static/images/{file.filename}"}
+
+
+# CORS middleware configuration
+origins = [
+    "http://localhost:8000",    # FastAPI server
+    "http://127.0.0.1:8000",    # FastAPI server alternative
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Dependency: Get DB session
 def get_db():
@@ -22,48 +85,8 @@ def get_db():
         db.close()
 
 # Define where clients send username/password for a token
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
-def create_order(db: Session, order: schemas.OrderCreate) -> models.Order:
-    """
-    Create a new order and its associated order items.
-    """
-    # Calculate the total price of the order.
-    total_price = Decimal(0)
-    for item in order.order_items:
-        game = db.query(models.Game).get(item.game_id)
-        if not game:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Game with id {item.game_id} not found")
-        if item.quantity > game.stock_quantity:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Not enough stock for game {game.title} (id: {game.game_id}).  Requested {item.quantity}, available {game.stock_quantity}")
-        total_price += game.price * item.quantity
-
-    # Create the order.
-    db_order = models.Order(
-        user_id=order.user_id,
-        total_price=total_price,
-        status="pending",  # Set initial order status
-    )
-    db.add(db_order)
-    db.flush()  # Need to flush to get the order_id
-
-    # Create the order items.
-    for item in order.order_items:
-        game = db.query(models.Game).get(item.game_id) #get game again
-        db_order_item = models.OrderItem(
-            order_id=db_order.order_id,
-            game_id=item.game_id,
-            quantity=item.quantity,
-            price=game.price,  # Store the price at the time of order
-        )
-        db.add(db_order_item)
-        game.stock_quantity -= item.quantity #reduce stock
-        db.add(game)
-
-    db.commit()
-    db.refresh(db_order)  # Refresh the order to get the order_items
-    return db_order
-    
 # Dependency to get the current user from a token
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -84,7 +107,7 @@ async def get_current_admin_user(current_user: models.User = Depends(get_current
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient privileges.  Only admins can access this resource.",
+            detail="Insufficient privileges. Only admins can access this resource.",
         )
     return current_user
 
@@ -93,12 +116,12 @@ async def get_current_admin_user(current_user: models.User = Depends(get_current
 #                                 API Endpoints for Games
 # ======================================================================================
 
-@app.post("/games/", response_model=schemas.Game, status_code=status.HTTP_201_CREATED, tags=["Games"])
+@api_app.post("/games/", response_model=schemas.Game, status_code=status.HTTP_201_CREATED, tags=["Games"])
 def create_game_endpoint(game: schemas.GameCreate, db: Session = Depends(get_db)):
     return crud.create_game(db=db, game=game)
 
 
-@app.get("/games/", response_model=List[schemas.Game], tags=["Games"])
+@api_app.get("/games/", response_model=List[schemas.Game], tags=["Games"])
 def read_games_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
     Retrieve a list of games with optional pagination.
@@ -106,7 +129,7 @@ def read_games_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends(g
     return crud.get_games(db, skip=skip, limit=limit)
 
 
-@app.get("/games/{game_id}", response_model=schemas.Game, tags=["Games"])
+@api_app.get("/games/{game_id}", response_model=schemas.Game, tags=["Games"])
 def read_game_endpoint(game_id: int, db: Session = Depends(get_db)):
     """
     Retrieve a specific game by its ID.
@@ -116,7 +139,7 @@ def read_game_endpoint(game_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
     return db_game
 
-@app.put("/games/{game_id}", response_model=schemas.Game, tags=["Games"])
+@api_app.put("/games/{game_id}", response_model=schemas.Game, tags=["Games"])
 def update_game_endpoint(game_id: int, game: schemas.GameUpdate, db: Session = Depends(get_db)):
     """
     Update an existing game's details.
@@ -126,7 +149,7 @@ def update_game_endpoint(game_id: int, game: schemas.GameUpdate, db: Session = D
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
     return db_game
 
-@app.delete("/games/{game_id}", response_model=schemas.Game, tags=["Games"])
+@api_app.delete("/games/{game_id}", response_model=schemas.Game, tags=["Games"])
 def delete_game_endpoint(game_id: int, db: Session = Depends(get_db)):
     """
     Delete a game from the database.
@@ -137,7 +160,50 @@ def delete_game_endpoint(game_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
     return db_game
 
-@app.get("/", tags=["Root"], summary="Root path of the API")
+@api_app.post("/sample-games", tags=["Games"])
+async def create_sample_games(db: Session = Depends(get_db)):
+    sample_games = [
+        schemas.GameCreate(
+            title="The Witcher 3",
+            description="An epic RPG with a rich, mature narrative",
+            price=29.99,
+            genre="RPG",
+            image_url="/images/witcher3.jpg"
+        ),
+        schemas.GameCreate(
+            title="Red Dead Redemption 2",
+            description="A western-themed action-adventure game",
+            price=49.99,
+            genre="Action",
+            image_url="/images/rdr2.jpg"
+        ),
+        schemas.GameCreate(
+            title="FIFA 23",
+            description="The latest in the FIFA series",
+            price=39.99,
+            genre="Sports",
+            image_url="/images/fifa23.jpg"
+        ),
+        schemas.GameCreate(
+            title="Minecraft",
+            description="A sandbox game of creativity and survival",
+            price=19.99,
+            genre="Sandbox",
+            image_url="/images/minecraft.jpg"
+        ),
+    ]
+    
+    created_games = []
+    for game in sample_games:
+        try:
+            created_game = crud.create_game(db=db, game=game)
+            created_games.append(created_game)
+        except Exception as e:
+            print(f"Error creating game {game.title}: {e}")
+    
+    return created_games
+
+@api_app.get("/", tags=["Root"], summary="Root path of the API")
 async def root():
     """
     Welcome message for the API.
@@ -147,7 +213,7 @@ async def root():
  # ======================================================================================
 #                                 API Endpoints for Orders
 # ======================================================================================
-@app.post("/orders/", response_model=schemas.Order, status_code=status.HTTP_201_CREATED, tags=["Orders"])
+@api_app.post("/orders/", response_model=schemas.Order, status_code=status.HTTP_201_CREATED, tags=["Orders"])
 def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """
     Create a new order for the logged-in user.
@@ -158,22 +224,22 @@ def create_order(order: schemas.OrderCreate, db: Session = Depends(get_db), curr
     db_order = crud.create_order(db=db, order=order)
     return db_order
 
-@app.get("/orders/{order_id}", response_model=schemas.Order, tags=["Orders"])
+@api_app.get("/orders/{order_id}", response_model=schemas.Order, tags=["Orders"])
 def get_order(order_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """
-    Retrieve a specific order by its ID.  Only the user who placed the order (or an admin, if you implement admin order viewing) can access this.
+    Retrieve a specific order by its ID. Only the user who placed the order (or an admin) can access this.
     """
     db_order = crud.get_order(db, order_id=order_id)
     if not db_order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    if db_order.user_id != current_user.user_id and current_user.role != "admin": # added admin role check
+    if db_order.user_id != current_user.user_id and current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view this order.",
         )
     return db_order
 
-@app.get("/users/orders/", response_model=List[schemas.Order], tags=["Orders"])
+@api_app.get("/orders/", response_model=List[schemas.Order], tags=["Orders"])
 def get_user_orders(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """
     Retrieve all orders for the logged-in user.
@@ -183,29 +249,30 @@ def get_user_orders(db: Session = Depends(get_db), current_user: models.User = D
 
 
 # ======================================================================================
-#                                 API Endpoints for Authentications
+#                                 API Endpoints for Authentication
 # ======================================================================================
 
-
-@app.post("/users/signup", response_model=schemas.User, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
+@api_app.post("/auth/signup", response_model=schemas.User, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
 def signup_new_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     """
     Create a new user (signup).
-    The first user will be the admin.  Subsequent users will be customers.
+    Ensure only one admin exists in the database.
     """
-    # Check if any users exist.  If not, this user is the admin.
-    if not crud.get_users(db):  # Use crud.get_users to check for any user
-        user.role = "admin"
-        print("--- AUTH: First user created as admin.")
-    else:
-        user.role = "customer"  # All subsequent users are customers.
-        print("--- AUTH: New user created as customer.")
+    if user.role == "admin":
+        existing_admin = db.query(models.User).filter(models.User.role == "admin").first()
+        if existing_admin:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="An admin already exists. Only one admin is allowed."
+            )
+
+    # Default role to customer if not provided
+    user.role = user.role if user.role else "customer"
 
     try:
         db_user = crud.create_user(db=db, user=user)
     except HTTPException as e:
         if e.status_code == 400 and "already exists" in e.detail:
-            #  returning the same error as before
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User with this email or username already exists")
         else:
             raise  # Re-raise other HTTPExceptions
@@ -213,11 +280,10 @@ def signup_new_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return db_user
     
 
-@app.post("/auth/token", response_model=schemas.Token, tags=["Authentication"])
+@api_app.post("/auth/token", response_model=schemas.Token, tags=["Authentication"])
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """
     OAuth2 compatible token login, get an access token for future requests.
-    Client should send 'username' (which we'll treat as email) and 'password' in form data.
     """
     print(f"--- AUTH: Login attempt for email: {form_data.username}")
     user = crud.get_user_by_email(db, email=form_data.username)
@@ -236,14 +302,87 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         expires_delta=access_token_expires
     )
     print(f"--- AUTH: Login SUCCESS for email: {user.email}, token generated.")
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "role": user.role}
 
 
 
-@app.get("/users/me", response_model=schemas.User, tags=["Users"])
+@api_app.get("/users/me", response_model=schemas.User, tags=["Users"])
 async def read_users_me(current_user: models.User = Depends(get_current_user)):
     """
     Get current authenticated user's details.
     """
     print(f"--- API: /users/me endpoint hit by authenticated user: {current_user.email}")
     return current_user
+
+
+# ======================================================================================
+#                                 API Endpoints for Cart
+# ======================================================================================
+
+@api_app.post("/cart/add", response_model=schemas.CartItem, status_code=status.HTTP_201_CREATED, tags=["Cart"])
+def add_to_cart(cart_item: schemas.CartItemCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """
+    Add a game to the user's cart or update the quantity if it already exists.
+    """
+    existing_cart_item = crud.get_cart_item(db, user_id=current_user.user_id, game_id=cart_item.game_id)
+    if existing_cart_item:
+        # Update the quantity if the item already exists in the cart
+        updated_cart_item = crud.update_cart_item(db, cart_item_id=existing_cart_item.id, quantity=existing_cart_item.quantity + cart_item.quantity)
+        return updated_cart_item
+    else:
+        # Add a new item to the cart
+        new_cart_item = crud.create_cart_item(db, cart_item=cart_item, user_id=current_user.user_id)
+        return new_cart_item
+
+
+@api_app.get("/cart/", response_model=List[schemas.CartItem], tags=["Cart"])
+def get_cart(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """
+    Retrieve all items in the user's cart.
+    """
+    return crud.get_user_cart(db, user_id=current_user.user_id)
+
+
+@api_app.put("/cart/{cart_item_id}", response_model=schemas.CartItem, tags=["Cart"])
+def update_cart_item(cart_item_id: int, cart_item_update: schemas.CartItemUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """
+    Update the quantity of a specific item in the user's cart.
+    """
+    db_cart_item = crud.get_cart_item_by_id(db, cart_item_id=cart_item_id)
+    if not db_cart_item or db_cart_item.user_id != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart item not found")
+    updated_cart_item = crud.update_cart_item(db, cart_item_id=cart_item_id, quantity=cart_item_update.quantity)
+    return updated_cart_item
+
+
+@api_app.delete("/cart/{cart_item_id}", response_model=schemas.CartItem, tags=["Cart"])
+def delete_cart_item(cart_item_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """
+    Remove an item from the user's cart.
+    """
+    db_cart_item = crud.get_cart_item_by_id(db, cart_item_id=cart_item_id)
+    if not db_cart_item or db_cart_item.user_id != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart item not found")
+    deleted_cart_item = crud.delete_cart_item(db, cart_item_id=cart_item_id)
+    return deleted_cart_item
+
+
+@api_app.post("/cart/checkout", response_model=schemas.Order, status_code=status.HTTP_201_CREATED, tags=["Cart"])
+def checkout_cart(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """
+    Convert the user's cart into an order and clear the cart.
+    """
+    cart_items = crud.get_user_cart(db, user_id=current_user.user_id)
+    if not cart_items:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cart is empty")
+
+    # Create an order from the cart items
+    order_items = [schemas.OrderItemCreate(game_id=item.game_id, quantity=item.quantity) for item in cart_items]
+    order = schemas.OrderCreate(user_id=current_user.user_id, order_items=order_items)
+    db_order = crud.create_order(db=db, order=order)
+
+    # Clear the cart
+    for item in cart_items:
+        crud.delete_cart_item(db, cart_item_id=item.id)
+
+    return db_order

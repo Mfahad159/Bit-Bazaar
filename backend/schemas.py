@@ -142,3 +142,27 @@ class Order(OrderCreate):
         json_encoders = {
             Decimal: lambda v: float(v)
         }
+
+# --- Cart Schemas ---
+
+class CartItemBase(BaseModel):
+    game_id: int
+    quantity: int = 1
+
+class CartItemCreate(CartItemBase):
+    pass
+
+class CartItemUpdate(BaseModel):
+    quantity: int
+
+class CartItem(CartItemBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    game: Game
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            Decimal: lambda v: float(v)
+        }

@@ -2,13 +2,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base 
 from sqlalchemy.orm import sessionmaker
 import urllib    # Required for pyodbc connection string
+import os
+from sqlalchemy.exc import SQLAlchemyError
+#==============================================================================
+# Database Configuration
+#==============================================================================
 
-
-# SQLALCHEMY_DATABASE_URL = "mssql+pyodbc://USER:PASSWORD@YOUR_SERVER_NAME/GameStoreDB?driver=ODBC+Driver+17+for+SQL+Server"
-
-# SQL Server Connection String
-SERVER_NAME = r"DESKTOP-EC65IMO\SQLEXPRESS" 
-DATABASE_NAME = "GAMESTOREDB" 
+# SQL Server Connection String - preferably from environment variables
+SERVER_NAME = os.getenv('DB_SERVER', r"DESKTOP-EC65IMO\SQLEXPRESS") 
+DATABASE_NAME = os.getenv('DB_NAME', "GAMESTOREDB") 
 
 # For Windows Authentication (most common for local dev SQL Server Express)
 params = urllib.parse.quote_plus(

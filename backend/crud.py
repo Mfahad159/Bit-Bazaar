@@ -1,8 +1,8 @@
-from . import models, schemas 
-from .security import get_password_hash #
+from backend import models, schemas
+from . import models, schemas
+from backend.security import get_password_hash
 from sqlalchemy.orm import Session
-from . import models, schemas # Import our SQLAlchemy models and Pydantic schemas
-from decimal import Decimal 
+from decimal import Decimal
 from fastapi import HTTPException, status
 from typing import List, Optional
 
@@ -190,3 +190,43 @@ def get_orders_by_user(db: Session, user_id: int) -> List[models.Order]:
     Get all orders for a specific user.
     """
     return db.query(models.Order).filter(models.Order.user_id == user_id).all()
+
+
+# Cart CRUD operations
+def get_cart_item(db: Session, user_id: int, game_id: int):
+    return db.query(models.CartItem).filter(
+        models.CartItem.user_id == user_id,
+        models.CartItem.game_id == game_id
+    ).first()
+
+def get_cart_item_by_id(db: Session, cart_item_id: int):
+    return db.query(models.CartItem).filter(models.CartItem.id == cart_item_id).first()
+
+def get_user_cart(db: Session, user_id: int):
+    return db.query(models.CartItem).filter(models.CartItem.user_id == user_id).all()
+
+def create_cart_item(db: Session, cart_item: schemas.CartItemCreate, user_id: int):
+    db_cart_item = models.CartItem(
+        user_id=user_id,
+        game_id=cart_item.game_id,
+        quantity=cart_item.quantity
+    )
+    db.add(db_cart_item)
+    db.commit()
+    db.refresh(db_cart_item)
+    return db_cart_item
+
+def update_cart_item(db: Session, cart_item_id: int, quantity: int):
+    db_cart_item = get_cart_item_by_id(db, cart_item_id)
+    if db_cart_item:
+        db_cart_item.quantity = quantity
+        db.commit()
+        db.refresh(db_cart_item)
+    return db_cart_item
+
+def delete_cart_item(db: Session, cart_item_id: int):
+    db_cart_item = get_cart_item_by_id(db, cart_item_id)
+    if db_cart_item:
+        db.delete(db_cart_item)
+        db.commit()
+    return db_cart_item
