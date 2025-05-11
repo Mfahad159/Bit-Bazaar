@@ -6,9 +6,9 @@ This project is a backend API for an online Game Store, developed as part of the
 
 The GameStore API provides functionalities to simulate an e-commerce platform for video games. Key features include:
 * Game inventory management (CRUD operations for games).
-* User account management (to be implemented).
-* Order processing (to be implemented).
-* Payment simulation (to be implemented).
+* User account management.
+* Order processing.
+* Payment simulation.
 
 ## Technology Stack
 
@@ -16,26 +16,6 @@ The GameStore API provides functionalities to simulate an e-commerce platform fo
 * **Database:** Microsoft SQL Server
 * **ORM:** SQLAlchemy
 * **Server:** Uvicorn
-
-## Current Functionality (As of May 8, 2025)
-
-* **Database Schema:**
-    * Tables for `Users`, `Games`, `Orders`, `OrderItems`, and `Payments` have been designed and created in SQL Server.
-    * Relationships, primary keys, foreign keys, and basic constraints are established.
-    * Triggers for automatically updating `updated_at` timestamps on `Games` and `Orders` tables.
-* **FastAPI Backend:**
-    * Basic application structure is set up.
-    * Database connection to SQL Server is configured using SQLAlchemy and `pyodbc`.
-    * SQLAlchemy models (currently for `Game`) are defined.
-    * Pydantic schemas for request/response validation (currently for `Game`) are defined.
-* **API Endpoints:**
-    * **Games CRUD:**
-        * `POST /games/`: Create a new game. (Verified Working)
-        * `GET /games/`: Retrieve a list of games. (Testing in progress)
-        * `GET /games/{game_id}`: Retrieve a specific game by ID. (Testing in progress)
-        * `PUT /games/{game_id}`: Update an existing game. (Code present)
-        * `DELETE /games/{game_id}`: Delete a game. (Code present)
-    * Interactive API documentation available via `/docs` (Swagger UI) and `/redoc`.
 
 ## Setup and Installation
 
