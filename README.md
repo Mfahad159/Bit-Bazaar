@@ -6,21 +6,11 @@ Bit Bazaar is a full-stack application for managing an online game store. It pro
 
 ## Project Overview
 
-Bit Bazaar offers the following key features:
-
-### Backend
-- **Game Inventory Management**: CRUD operations for games.
-- **User Authentication**: Secure login and registration with role-based access (admin and customer).
-- **Cart Management**: Add, update, and remove items from the cart.
-- **Order Processing**: Convert cart items into orders and simulate payments.
-- **Admin Panel**: Manage games and track inventory.
-
-### Frontend
-- **Game Display**: Browse games with filtering by category.
-- **Cart Functionality**: Add games to the cart and view the total price.
-- **Admin Dashboard**: Add, edit, and delete games from the inventory.
-
----
+The GameStore API provides functionalities to simulate an e-commerce platform for video games. Key features include:
+* Game inventory management (CRUD operations for games).
+* User account management (to be implemented).
+* Order processing (to be implemented).
+* Payment simulation (to be implemented).
 
 ## Technology Stack
 
@@ -32,53 +22,25 @@ Bit Bazaar offers the following key features:
 
 ---
 
-## Current Functionality
+## Current Functionality (As of May 8, 2025)
 
-### Database Schema
-- Tables for `Users`, `Games`, `Orders`, `OrderItems`, `CartItems`, and `Payments` have been designed and implemented in SQL Server.
-- Relationships, primary keys, foreign keys, and constraints are established.
-- Triggers for automatically updating `updated_at` timestamps on `Games` and `Orders` tables.
-
-### Backend
-- **Authentication**:
-  - Secure login and registration with hashed passwords.
-  - Role-based access control (admin and customer).
-  - JWT-based authentication for API endpoints.
-- **Game Management**:
-  - Create a new game (admin only).
-  - Retrieve a list of games.
-  - Retrieve a specific game by ID.
-  - Update an existing game (admin only).
-  - Delete a game (admin only).
-- **Cart Management**:
-  - Add an item to the cart.
-  - Retrieve all items in the user's cart.
-  - Update the quantity of a cart item.
-  - Remove an item from the cart.
-  - Convert cart items into an order.
-- **Order Management**:
-  - Create a new order.
-  - Retrieve all orders for the logged-in user.
-  - Retrieve a specific order by ID.
-- **Payment Simulation**:
-  - Process a payment for an order.
-
-### Frontend
-- **User Authentication**:
-  - Login and registration pages with role selection (admin or customer).
-  - Dynamic navigation links based on authentication status.
-- **Game Display**:
-  - Browse games in a grid format with filtering by category.
-  - Add games to the cart with real-time updates to the cart count.
-- **Cart**:
-  - View cart items with options to update quantities or remove items.
-  - Proceed to checkout and simulate order placement.
-- **Admin Panel**:
-  - Add new games to the inventory.
-  - Edit or delete existing games.
-  - View total games in the inventory.
-
----
+* **Database Schema:**
+    * Tables for `Users`, `Games`, `Orders`, `OrderItems`, and `Payments` have been designed and created in SQL Server.
+    * Relationships, primary keys, foreign keys, and basic constraints are established.
+    * Triggers for automatically updating `updated_at` timestamps on `Games` and `Orders` tables.
+* **FastAPI Backend:**
+    * Basic application structure is set up.
+    * Database connection to SQL Server is configured using SQLAlchemy and `pyodbc`.
+    * SQLAlchemy models (currently for `Game`) are defined.
+    * Pydantic schemas for request/response validation (currently for `Game`) are defined.
+* **API Endpoints:**
+    * **Games CRUD:**
+        * `POST /games/`: Create a new game. (Verified Working)
+        * `GET /games/`: Retrieve a list of games. (Testing in progress)
+        * `GET /games/{game_id}`: Retrieve a specific game by ID. (Testing in progress)
+        * `PUT /games/{game_id}`: Update an existing game. (Code present)
+        * `DELETE /games/{game_id}`: Delete a game. (Code present)
+    * Interactive API documentation available via `/docs` (Swagger UI) and `/redoc`.
 
 ## Setup and Installation
 
