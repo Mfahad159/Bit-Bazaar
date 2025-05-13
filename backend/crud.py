@@ -230,3 +230,21 @@ def delete_cart_item(db: Session, cart_item_id: int):
         db.delete(db_cart_item)
         db.commit()
     return db_cart_item
+
+def create_payment(db: Session, payment: schemas.PaymentCreate, order=None) -> models.Payment:
+    # If order is not provided, fetch it
+    if order is None:
+        order = db.query(models.Order).get(payment.order_id)
+    # Generate transaction_id
+    transaction_id = f"TXN-{order.order_id}-{int(order.order_date.timestamp())}" if order else None
+    db_payment = models.Payment(
+        order_id=payment.order_id,
+        amount_paid=payment.amount_paid,
+        payment_method=payment.payment_method,
+        payment_status="Success",
+        transaction_id=transaction_id,
+    )
+    db.add(db_payment)
+    db.commit()
+    db.refresh(db_payment)
+    return db_payment

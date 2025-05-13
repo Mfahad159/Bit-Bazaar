@@ -149,8 +149,12 @@ class CartItemBase(BaseModel):
     game_id: int
     quantity: int = 1
 
-class CartItemCreate(CartItemBase):
-    pass
+class CartItemCreate(BaseModel):
+    game_id: int
+    quantity: int
+
+    class Config:
+        orm_mode = True
 
 class CartItemUpdate(BaseModel):
     quantity: int
@@ -166,3 +170,22 @@ class CartItem(CartItemBase):
         json_encoders = {
             Decimal: lambda v: float(v)
         }
+
+# --- Payment Schemas ---
+
+class PaymentBase(BaseModel):
+    order_id: int
+    amount_paid: float
+    payment_method: Optional[str] = "Simulated"
+    payment_status: Optional[str] = "Pending"
+
+class PaymentCreate(PaymentBase):
+    pass
+
+class Payment(PaymentBase):
+    payment_id: int
+    payment_date: datetime
+    transaction_id: Optional[str]
+
+    class Config:
+        orm_mode = True

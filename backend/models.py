@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, DECIMAL, DATE, DateTime, ForeignKey, Numeric
+from sqlalchemy import Column, Integer, String, DECIMAL, DATE, DateTime, ForeignKey, Numeric, Float
 from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import datetime
 from backend.database import Base
+
 class Order(Base):
     __tablename__ = "Orders"
 
@@ -14,6 +15,7 @@ class Order(Base):
 
     user = relationship("User", back_populates="orders")
     order_items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")  # Cascade delete
+    payment = relationship("Payment", back_populates="order", uselist=False)
 
 
 class OrderItem(Base):
@@ -30,7 +32,6 @@ class OrderItem(Base):
     game = relationship("Game")  # No back_populates because Game doesn't have direct orders.
 
 
-
 class User(Base):
     __tablename__ = "Users"
     user_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -40,7 +41,7 @@ class User(Base):
     role = Column(String(20), nullable=False, default='customer')
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     cart_items = relationship("CartItem", back_populates="user", cascade="all, delete-orphan")
-    orders = relationship("Order", back_populates="user") # ADDED THIS LINE
+    orders = relationship("Order", back_populates="user")
 
 
 class Game(Base):
@@ -56,6 +57,8 @@ class Game(Base):
     image_url = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class CartItem(Base):
     __tablename__ = "CartItems"
 
@@ -67,3 +70,17 @@ class CartItem(Base):
 
     user = relationship("User", back_populates="cart_items")
     game = relationship("Game")
+
+
+class Payment(Base):
+    __tablename__ = "Payments"
+
+    payment_id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("Orders.order_id"), nullable=False, unique=True)
+    payment_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    payment_method = Column(String(50), default="Simulated", nullable=False)
+    amount_paid = Column(Float, nullable=False)
+    transaction_id = Column(String(100), nullable=True)
+    payment_status = Column(String(50), default="Pending", nullable=False)
+
+    order = relationship("Order", back_populates="payment")

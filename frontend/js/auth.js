@@ -5,7 +5,7 @@ async function checkAuth() {
     if (!token) return false;
 
     try {
-        const response = await fetch('http://localhost:8000/users/me', {
+        const response = await fetch('api/users/me', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -33,7 +33,7 @@ function updateAuthUI(user) {
         authLinks.innerHTML = `
             <span>Welcome, ${user.username}</span>
             <a href="#" onclick="logout()">Logout</a>
-            ${user.is_admin ? '<a href="admin.html">Admin Panel</a>' : ''}
+            ${user.role === "admin" ? '<a href="admin.html">Admin Panel</a>' : ''}
         `;
     } else {
         authLinks.innerHTML = `

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Bit Bazaar</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .admin-welcome {
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        .admin-welcome h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            color: #00ff88;
+        }
+        .admin-welcome p {
+            font-size: 1.1em;
+            color: #cccccc;
+        }
+        .admin-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            flex: 1;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card i {
+            font-size: 2em;
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+        .stat-card span {
+            display: block;
+            font-size: 1.8em;
+            color: #ffffff;
+            margin: 10px 0;
+        }
+        .stat-card p {
+            color: #cccccc;
+            margin: 0;
+        }
+        .game-list {
+            margin-top: 30px;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .game-list h3 {
+            color: #00ff88;
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .game-item {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border: 1px solid #333;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            transition: transform 0.2s ease;
+            background: #2d2d2d;
+        }
+        .game-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+        .game-image {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            margin-right: 25px;
+            border-radius: 8px;
+            border: 2px solid #333;
+        }
+        .game-info {
+            flex-grow: 1;
+        }
+        .game-info h3 {
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+        .game-description {
+            color: #cccccc;
+            margin-bottom: 10px;
+            line-height: 1.5;
+            max-width: 600px;
+        }
+        .game-price, .game-genre, .game-stock {
+            color: #999999;
+            margin: 5px 0;
+            font-size: 0.95em;
+        }
+        .game-price {
+            color: #00ff88;
+            font-weight: 600;
+        }
+        .game-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .edit-btn, .delete-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .edit-btn {
+            background-color: #00ff88;
+            color: #1a1a1a;
+        }
+        .edit-btn:hover {
+            background-color: #00cc6a;
+            transform: translateY(-2px);
+        }
+        .delete-btn {
+            background-color: #ff4444;
+            color: white;
+        }
+        .delete-btn:hover {
+            background-color: #cc0000;
+            transform: translateY(-2px);
+        }
+        .auth-form {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+        .auth-form h3 {
+            color: #00ff88;
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #2d2d2d;
+            color: #ffffff;
+            font-size: 1em;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: #00ff88;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+        }
+        .form-group input::placeholder, .form-group textarea::placeholder {
+            color: #666666;
+        }
+        .auth-button {
+            background-color: #00ff88;
+            color: #1a1a1a;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .auth-button:hover {
+            background-color: #00cc6a;
+            transform: translateY(-2px);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px; /* Smaller width */
+            max-height: 80%; /* Limit height */
+            overflow-y: auto; /* Add scroll if content exceeds height */
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        .modal-content h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            text-align: center;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .close-btn:hover {
+            color: #e74c3c;
+        }
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1em;
+            line-height: 1.5;
+        }
+        textarea:focus {
+            border-color: #00ff88;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+        }
+        .navbar {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .nav-brand img {
+            height: 40px;
+            width: auto;
+        }
+        .nav-brand h1 {
+            color: #00ff88;
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+        .nav-links a {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 15px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        .nav-links a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #00ff88;
+        }
+        .nav-links i {
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <img src="images/logo.png" alt="Bit Bazaar Logo">
+            <h1>Bit Bazaar</h1>
+        </div>
+        <div class="nav-links">
+            <a href="index.html"><i class="fas fa-home"></i> Home</a>
+            <a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart</a>
+            <div class="auth-links" id="authLinks">
+                <!-- Auth links will be dynamically updated -->
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="admin-container">
+            <div class="admin-header">
+                <div class="admin-welcome">
+                    <h2><i class="fas fa-shield-alt"></i> Admin Dashboard</h2>
+                    <p>Manage your game inventory and track sales with ease</p>
+                </div>
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-gamepad"></i>
+                        <span id="totalGames">0</span>
+                        <p>Total Games</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add Game Form -->
+            <form id="addGameForm" class="auth-form">
+                <h3><i class="fas fa-plus-circle"></i> Add New Game</h3>
+                <div class="form-group">
+                    <label for="title">Game Title</label>
+                    <input type="text" name="title" id="title" placeholder="Enter game title" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea name="description" id="description" placeholder="Enter game description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="price">Price</label>
+                    <input type="number" name="price" id="price" step="0.01" placeholder="Enter game price" required>
+                </div>
+                <div class="form-group">
+                    <label for="genre">Genre</label>
+                    <input type="text" name="genre" id="genre" placeholder="Enter game genre" required>
+                </div>
+                <div class="form-group">
+                    <label for="stock_quantity">Stock Quantity</label>
+                    <input type="number" name="stock_quantity" id="stock_quantity" placeholder="Enter stock quantity" required>
+                </div>
+                <div class="form-group">
+                    <label for="image_url">Image URL</label>
+                    <input type="url" name="image_url" id="image_url" placeholder="Enter image URL" required>
+                </div>
+                <button type="submit" class="auth-button">Add Game</button>
+            </form>
+
+            <!-- Games List -->
+            <div class="game-list">
+                <h3><i class="fas fa-list"></i> Manage Games</h3>
+                <div id="gamesList">
+                    <!-- Games will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Game Modal -->
+    <div id="editGameModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeEditModal()">×</button>
+            <h3><i class="fas fa-edit"></i> Edit Game</h3>
+            <form id="editGameForm" class="auth-form">
+                <input type="hidden" name="gameId" id="editGameId">
+                <div class="form-group">
+                    <label for="editTitle">Game Title</label>
+                    <input type="text" name="title" id="editTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="editDescription">Description</label>
+                    <textarea name="description" id="editDescription" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editPrice">Price</label>
+                    <input type="number" name="price" id="editPrice" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="editGenre">Genre</label>
+                    <input type="text" name="genre" id="editGenre" required>
+                </div>
+                <div class="form-group">
+                    <label for="editStockQuantity">Stock Quantity</label>
+                    <input type="number" name="stock_quantity" id="editStockQuantity" required>
+                </div>
+                <div class="form-group">
+                    <label for="editImageUrl">Image URL</label>
+                    <input type="url" name="image_url" id="editImageUrl" required>
+                </div>
+                <button type="submit" class="auth-button">Update Game</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Bit Bazaar. All rights reserved.</p>
+    </footer>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/admin.js"></script>
+    <script>
+        // Open the edit modal
+        function openEditModal(game) {
+            const modal = document.getElementById('editGameModal');
+            modal.classList.add('show');
+
+            // Populate the form with game data
+            document.getElementById('editGameId').value = game.id;
+            document.getElementById('editTitle').value = game.title;
+            document.getElementById('editDescription').value = game.description;
+            document.getElementById('editPrice').value = game.price;
+            document.getElementById('editGenre').value = game.genre;
+            document.getElementById('editStockQuantity').value = game.stock_quantity;
+            document.getElementById('editImageUrl').value = game.image_url;
+        }
+
+        // Close the edit modal
+        function closeEditModal() {
+            const modal = document.getElementById('editGameModal');
+            modal.classList.remove('show');
+        }
+
+        // Add event listener to close modal when clicking outside the modal content
+        document.addEventListener('click', (event) => {
+            const modal = document.getElementById('editGameModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
+        });
+    </script>
+</body>
+</html>
